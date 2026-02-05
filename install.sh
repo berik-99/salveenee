@@ -1,19 +1,19 @@
 #!/bin/bash
 
-# Configurazione repository
+# Repository Configuration
 REPO="berik-99/salveenee"
 BINARY_NAME="salveenee"
 INSTALL_PATH="/usr/local/bin"
 
-# Colori
+# Colors
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
-NC='\033[0m'
+NC='\033[0m' # No Color
 
-echo -e "${BLUE}Inizio installazione di $BINARY_NAME...${NC}"
+echo -e "${BLUE}Starting $BINARY_NAME installation...${NC}"
 
-# 1. Rilevamento Architettura
+# 1. Architecture Detection
 OS_TYPE=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH_TYPE=$(uname -m)
 
@@ -25,35 +25,37 @@ case $ARCH_TYPE in
         ARCH_SUFFIX="arm64"
         ;;
     *)
-        echo -e "${RED}Architettura non supportata: $ARCH_TYPE${NC}"
+        echo -e "${RED}Unsupported architecture: $ARCH_TYPE${NC}"
         exit 1
         ;;
 esac
 
-# Al momento supportiamo solo Linux (WSL incluso)
+# OS Check (Currently supporting Linux/WSL)
 if [ "$OS_TYPE" != "linux" ]; then
-    echo -e "${RED}Questo installer supporta solo Linux. Per altri OS, compila dai sorgenti.${NC}"
+    echo -e "${RED}This installer currently supports Linux only. For other OS, please build from source.${NC}"
     exit 1
 fi
 
-# 2. Recupero URL ultima release tramite API GitHub
-echo -e "Ricerca dell'ultima versione per $ARCH_SUFFIX..."
+# 2. Fetch Latest Release URL via GitHub API
+echo -e "Checking for the latest $ARCH_SUFFIX release..."
 RELEASE_JSON=$(curl -s https://api.github.com/repos/$REPO/releases/latest)
-# Estraiamo l'URL che contiene il suffisso corretto (es: salveenee_amd64)
+
+# Extracting the download URL for the specific architecture
 DOWNLOAD_URL=$(echo "$RELEASE_JSON" | grep "browser_download_url" | grep "_$ARCH_SUFFIX" | cut -d '"' -f 4)
 
 if [ -z "$DOWNLOAD_URL" ]; then
-    echo -e "${RED}Errore: Impossibile trovare il binario 'salveenee_$ARCH_SUFFIX' nelle release di GitHub.${NC}"
+    echo -e "${RED}Error: Could not find binary 'salveenee_$ARCH_SUFFIX' in the latest GitHub release.${NC}"
+    echo "Please ensure you have uploaded assets named exactly 'salveenee_amd64' and 'salveenee_arm64'."
     exit 1
 fi
 
-# 3. Download
-echo -e "Download in corso..."
+# 3. Downloading Binary
+echo -e "Downloading binary..."
 curl -L -o "$BINARY_NAME" "$DOWNLOAD_URL"
 
-# 4. Installazione
+# 4. Installation
 chmod +x "$BINARY_NAME"
-echo -e "Spostamento del binario in $INSTALL_PATH (potrebbe servire la password di sudo)..."
+echo -e "Moving binary to $INSTALL_PATH (sudo password may be required)..."
 
 if [ -w "$INSTALL_PATH" ]; then
     mv "$BINARY_NAME" "$INSTALL_PATH/$BINARY_NAME"
@@ -63,10 +65,10 @@ fi
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}------------------------------------------${NC}"
-    echo -e "${GREEN}Installazione riuscita!${NC}"
-    echo -e "Digita '${BLUE}$BINARY_NAME${NC}' per avviare lo script."
+    echo -e "${GREEN}Installation successful!${NC}"
+    echo -e "You can now run it by typing: ${BLUE}$BINARY_NAME${NC}"
     echo -e "${GREEN}------------------------------------------${NC}"
 else
-    echo -e "${RED}Errore durante lo spostamento del file.${NC}"
+    echo -e "${RED}Error: Failed to move the binary to $INSTALL_PATH.${NC}"
     exit 1
 fi
